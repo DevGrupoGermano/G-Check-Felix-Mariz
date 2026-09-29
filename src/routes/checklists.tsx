@@ -1892,7 +1892,7 @@ function ChecklistsPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="Checklists" subtitle="Rotinas operacionais da Loja Centro">
+      <AppShell title="Checklists" subtitle="Rotinas operacionais da Loja Matriz">
         <p className="text-sm text-muted-foreground">Carregando rotinas…</p>
       </AppShell>
     );
@@ -1900,7 +1900,7 @@ function ChecklistsPage() {
 
   if (isError) {
     return (
-      <AppShell title="Checklists" subtitle="Rotinas operacionais da Loja Centro">
+      <AppShell title="Checklists" subtitle="Rotinas operacionais da Loja Matriz">
         <p className="text-sm text-destructive">Não foi possível carregar as rotinas.</p>
       </AppShell>
     );
@@ -2102,7 +2102,7 @@ function ChecklistsPage() {
     <AppShell
       title="Checklists"
       subtitle={
-        podeVerTodas && !verMinhas ? "Rotinas operacionais da Loja Centro" : "Suas tarefas do dia"
+        podeVerTodas && !verMinhas ? "Rotinas operacionais da Loja Matriz" : "Suas tarefas do dia"
       }
     >
       <div className="mx-auto max-w-4xl space-y-5">

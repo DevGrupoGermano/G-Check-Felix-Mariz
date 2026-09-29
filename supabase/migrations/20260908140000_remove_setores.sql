@@ -137,7 +137,7 @@ begin
     '<tr><td style="padding:0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' ||
     '<td width="20%" style="background-color:#BF2020;height:72px;font-size:0;line-height:0;">&nbsp;</td>' ||
     '<td width="60%" style="background-color:#FFDA24;text-align:center;padding:10px 0;">' ||
-    format('<img src="%s" width="90" alt="Félix Mercado" style="display:inline-block;">', p_logo_felix) ||
+    format('<img src="%s" width="90" alt="Felix Matriz" style="display:inline-block;">', p_logo_felix) ||
     '</td>' ||
     '<td width="20%" style="background-color:#BF2020;height:72px;font-size:0;line-height:0;">&nbsp;</td>' ||
     '</tr></table></td></tr>' ||
@@ -237,7 +237,7 @@ begin
     return;
   end if;
 
-  app_url := coalesce(app_url, 'https://mercado-felix.g-check.workers.dev/');
+  app_url := coalesce(app_url, 'https://felix-matriz.g-check.workers.dev/');
   suporte_email := coalesce(suporte_email, 'g-check@germanoconsultoria.com.br');
   logo_felix := app_url || 'logo-felix.png';
   logo_gtech := app_url || 'logo-gtech.png';

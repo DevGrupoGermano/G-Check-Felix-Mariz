@@ -158,7 +158,7 @@ begin
     return;
   end if;
 
-  app_url := coalesce(app_url, 'https://mercado-felix.g-check.workers.dev/');
+  app_url := coalesce(app_url, 'https://felix-matriz.g-check.workers.dev/');
   suporte_email := coalesce(suporte_email, 'g-check@germanoconsultoria.com.br');
   logo_felix := app_url || 'logo-felix.png';
   logo_gtech := app_url || 'logo-gtech.png';

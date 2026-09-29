@@ -1,6 +1,6 @@
-# G-Check-Felix
+# G-Check-Felix-Matriz
 
-Versão do **G-Check** personalizada para o cliente **Supermercado Felix**.
+Versão do **G-Check** personalizada para o cliente **Felix Matriz**.
 
 G-Check é um app web de rotinas e checklists operacionais para supermercados:
 Dashboard com visão de pendências, checklists concluídos e taxa de execução,
@@ -41,7 +41,7 @@ Outros scripts:
 
 Migration única de baseline em `supabase/migrations/20260902120000_init.sql`:
 cria todo o schema (tabelas, funções, triggers, RLS, storage bucket) e o único
-login inicial `admin@mercadofelix.com` / `Admin@2026` (papel admin). O banco
+login inicial `admin@felixmatriz.com` / `Admin@2026` (papel admin). O banco
 começa sem dados de demonstração.
 
 Projeto novo (vazio): rode esse arquivo uma vez no SQL Editor do Supabase, ou

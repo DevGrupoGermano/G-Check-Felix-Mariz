@@ -219,7 +219,7 @@ export function AppShell({
           </button>
           <img
             src="/logo-felix.png"
-            alt="Supermercado Felix"
+            alt="Felix Matriz"
             className="h-10 w-auto shrink-0 md:h-12"
           />
           <div className="min-w-0">

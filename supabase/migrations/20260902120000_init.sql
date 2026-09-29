@@ -1,8 +1,8 @@
 -- ============================================================================
--- G-Check-Felix — migration inicial (Supermercado Felix)
+-- G-Check-Felix-Matriz — migration inicial (Felix Matriz)
 -- ----------------------------------------------------------------------------
 -- Baseline única: cria TODO o schema (tabelas, funções, triggers, RLS,
--- storage bucket) e o único login inicial admin@mercadofelix.com.
+-- storage bucket) e o único login inicial admin@felixmatriz.com.
 -- Consolida o histórico antigo do G-Check; o banco começa sem dados de
 -- demonstração (nenhuma checklist, item ou setor).
 -- ============================================================================
@@ -981,13 +981,13 @@ create policy "checklist-fotos delete autenticado"
 
 
 -- ============================================================================
--- LOGIN INICIAL — admin@mercadofelix.com / Admin@2026 (papel admin)
+-- LOGIN INICIAL — admin@felixmatriz.com / Admin@2026 (papel admin)
 -- Único usuário criado. Demais funcionários entram pelo app (tela Funcionários).
 -- ============================================================================
 
 do $$
 declare
-  v_email text := 'admin@mercadofelix.com';
+  v_email text := 'admin@felixmatriz.com';
   v_senha text := 'Admin@2026';
   v_nome  text := 'Administrador';
   v_uid   uuid;

@@ -23,7 +23,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-// Paleta da tela de login (cliente Supermercado Felix):
+// Paleta da tela de login (cliente Felix Matriz):
 // - fundo: amarelo mostarda um pouco claro
 // - caixa do formulário: vermelho um pouco mais forte e escuro
 const COR_FUNDO = "#FFDA24";
@@ -67,7 +67,7 @@ function LoginPage() {
         {/* Logo do cliente, acima e fora do formulário. */}
         <img
           src="/logo-felix.png"
-          alt="Supermercado Felix"
+          alt="Felix Matriz"
           className="h-36 w-auto drop-shadow-sm"
         />
 

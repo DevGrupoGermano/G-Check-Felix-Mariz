@@ -285,7 +285,7 @@ export function gerarHistoricoPdf(
     22,
   );
 
-  // Canto oposto ao título — logo da Felix.
+  // Canto oposto ao título — logo da Felix Matriz.
   if (logoPronta(logoFelix)) {
     const w = 18;
     const h = (w * logoFelix.naturalHeight) / logoFelix.naturalWidth;

@@ -620,7 +620,7 @@ function Dashboard() {
 
   const subtitle =
     podeVerTodas && !verMinhas
-      ? "Resumo do dia — Loja Centro"
+      ? "Resumo do dia — Loja Matriz"
       : `Tarefas atribuídas a ${profile?.nome ?? "você"}`;
 
   if (isLoading) {
