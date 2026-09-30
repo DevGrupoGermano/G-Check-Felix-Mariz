@@ -137,22 +137,37 @@ function passaFiltroEstado(estado: EstadoVista, selecionados: EstadoFiltro[]): b
  * Filtro por ATIVIDADE — separado do filtro de Estado (que é da rotina):
  * quando ativo, não descarta a rotina inteira, só recorta a lista de itens
  * dela pros que passam no critério (mesmo mecanismo do filtro de horário —
- * ver `recortarHorario`). Hoje só tem uma opção; dá pra crescer aqui.
+ * ver `recortarHorario`).
  */
-export type FiltroTarefa = "concluida_atrasada";
+export type FiltroTarefa = "concluida_atrasada" | "incompleta";
 
-const FILTROS_TAREFA_VALIDOS: FiltroTarefa[] = ["concluida_atrasada"];
+const FILTROS_TAREFA_VALIDOS: FiltroTarefa[] = ["concluida_atrasada", "incompleta"];
 
 const tarefaOptions: { id: FiltroTarefa; label: string }[] = [
   { id: "concluida_atrasada", label: "Concluídas atrasadas" },
+  { id: "incompleta", label: "Incompletas" },
 ];
 
-/** A atividade passa no filtro de tarefa selecionado (vazio = passa tudo)? */
-function passaFiltroTarefa(i: ChecklistItem, c: Checklist, filtros: FiltroTarefa[]): boolean {
+/**
+ * A atividade passa no filtro de tarefa selecionado (vazio = passa tudo)?
+ * `agora` deve refletir o dia em foco (ver `agoraParaSituacao`) — "incompleta"
+ * depende do relógio pra saber se o prazo (e portanto o turno) já virou.
+ */
+function passaFiltroTarefa(
+  i: ChecklistItem,
+  c: Checklist,
+  filtros: FiltroTarefa[],
+  agora: Date = new Date(),
+): boolean {
   if (filtros.length === 0) return true;
   return filtros.some((f) => {
     if (f === "concluida_atrasada") {
       return i.status === "concluido" && situacaoItem(i, c) === "concluida_atrasada";
+    }
+    // "incompleta": o turno da atividade já virou (passou do prazo dela —
+    // término, início, ou o limite da rotina) e ela continua pendente.
+    if (f === "incompleta") {
+      return situacaoItem(i, c, agora) === "atrasada";
     }
     return false;
   });
@@ -2075,7 +2090,9 @@ function ChecklistsPage() {
   const temFiltroTarefa = tarefasSelecionadas.length > 0;
   const recortarTarefa = (c: Checklist): Checklist => {
     if (!temFiltroTarefa) return c;
-    const itens = c.itens.filter((i) => passaFiltroTarefa(i, c, tarefasSelecionadas));
+    const itens = c.itens.filter((i) =>
+      passaFiltroTarefa(i, c, tarefasSelecionadas, agoraParaSituacao(dataAlvo, c)),
+    );
     return { ...c, itens, ...descricaoAgenda(itens, c.corteDia) };
   };
 
@@ -2118,7 +2135,7 @@ function ChecklistsPage() {
                 return !t || turnosSelecionados.includes(t as Turno);
               })
               .filter((i) => (!horarioDe && !horarioAte) || horarioNaFaixa(i.horarioInicio))
-              .filter((i) => passaFiltroTarefa(i, c, tarefasSelecionadas))
+              .filter((i) => passaFiltroTarefa(i, c, tarefasSelecionadas, agoraParaSituacao(dataAlvo, c)))
               .map((i) => ({ checklist: c, item: i, estado: estadoDaTarefa(c, i, ehHoje) })),
           )
           .filter((t) => passaFiltroEstado(t.estado, estadosSelecionados))
