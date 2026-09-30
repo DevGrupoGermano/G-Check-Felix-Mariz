@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "cleanup:anexos": "bun run scripts/cleanup-anexos.ts",
-    "cleanup:anexos:dry": "bun run scripts/cleanup-anexos.ts --dry-run"
+    "cleanup:anexos:dry": "bun run scripts/cleanup-anexos.ts --dry-run",
+    "backfill:anexos": "bun run scripts/backfill-anexos-metadata.ts",
+    "backfill:anexos:dry": "bun run scripts/backfill-anexos-metadata.ts --dry-run"
   },
   "overrides": {
     "rolldown": "1.2.1"

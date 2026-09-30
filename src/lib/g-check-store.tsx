@@ -8,6 +8,8 @@ import {
   type ChecklistItemRow,
   type ChecklistRow,
 } from "@/lib/supabase";
+import { caminhoDoAnexo } from "@/lib/anexos-path";
+import { anexosStorageService } from "@/lib/storage-service";
 import { dataDoIso, isoDoDia, paraFusoLoja } from "@/lib/utils";
 import { itemRodaNoDia, recorrencias, type Recorrencia } from "@/lib/recorrencia";
 import { useAuth } from "@/lib/auth-store";
@@ -297,22 +299,29 @@ function camposItemBanco(it: ItemInput) {
 
 const QUERY_KEY = ["checklists"] as const;
 
-/** Caminho do arquivo dentro do bucket a partir da URL pública salva no anexo. */
-function caminhoDoAnexo(url: string): string | null {
-  const marcador = `/object/public/${BUCKET_ANEXOS}/`;
-  const idx = url.indexOf(marcador);
-  if (idx === -1) return null;
-  return decodeURIComponent(url.slice(idx + marcador.length));
+/** Apaga da tabela de metadados as linhas correspondentes a uma lista de
+ *  caminhos — best effort, mesmo espírito das funções abaixo. */
+async function removerMetadadosDosAnexos(caminhos: string[]): Promise<void> {
+  if (caminhos.length === 0) return;
+  const { error } = await supabase.from("anexos").delete().in("storage_path", caminhos);
+  if (error) console.error("Falha ao remover metadados de anexo(s):", error.message);
 }
 
-/** Apaga os arquivos do Storage correspondentes a uma lista de anexos — best
- *  effort: erro aqui não deve travar a operação no banco (o cron de limpeza
- *  cobre qualquer órfão que sobrar). */
+/** Apaga os arquivos do Storage (+ metadados) correspondentes a uma lista de
+ *  anexos — best effort: erro aqui não deve travar a operação no banco (o
+ *  cron de limpeza cobre qualquer órfão que sobrar). */
 async function removerArquivosDosAnexos(anexos: { url: string }[]): Promise<void> {
   const caminhos = anexos.map((a) => caminhoDoAnexo(a.url)).filter((c): c is string => c !== null);
   if (caminhos.length === 0) return;
-  const { error } = await supabase.storage.from(BUCKET_ANEXOS).remove(caminhos);
-  if (error) console.error("Falha ao remover arquivo(s) do Storage:", error.message);
+  try {
+    await anexosStorageService.delete(caminhos);
+  } catch (err) {
+    console.error(
+      "Falha ao remover arquivo(s) do Storage:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+  await removerMetadadosDosAnexos(caminhos);
 }
 
 /** Apaga toda a pasta de anexos de uma checklist (best effort, ver acima). */
@@ -321,9 +330,10 @@ async function removerPastaDaChecklist(checklistId: string): Promise<void> {
   let offset = 0;
   const caminhos: string[] = [];
   for (;;) {
-    const { data, error } = await supabase.storage
-      .from(BUCKET_ANEXOS)
-      .list(checklistId, { limit: limite, offset });
+    const { data, error } = await anexosStorageService.list(checklistId, {
+      limit: limite,
+      offset,
+    });
     if (error) {
       console.error("Falha ao listar pasta de anexos da checklist:", error.message);
       return;
@@ -336,8 +346,15 @@ async function removerPastaDaChecklist(checklistId: string): Promise<void> {
     offset += limite;
   }
   if (caminhos.length === 0) return;
-  const { error } = await supabase.storage.from(BUCKET_ANEXOS).remove(caminhos);
-  if (error) console.error("Falha ao remover pasta de anexos do Storage:", error.message);
+  try {
+    await anexosStorageService.delete(caminhos);
+  } catch (err) {
+    console.error(
+      "Falha ao remover pasta de anexos do Storage:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+  await removerMetadadosDosAnexos(caminhos);
 }
 
 // Vídeo gravado na hora (câmera) já sai limitado a ~20MB (ver
@@ -819,15 +836,26 @@ export function GCheckProvider({ children }: { children: React.ReactNode }) {
       const caminho = `${checklistId}/${itemId}-${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}.${ext}`;
-      const { error: uploadError } = await comTimeout(
-        supabase.storage.from(BUCKET_ANEXOS).upload(caminho, arquivo, {
-          upsert: true,
-          ...(arquivo.type ? { contentType: arquivo.type } : {}),
-        }),
+      const resultadoUpload = await comTimeout(
+        anexosStorageService.upload(caminho, arquivo),
         TIMEOUT_UPLOAD_MS,
         "Envio muito lento — verifique sua conexão e tente novamente.",
       );
-      if (uploadError) throw uploadError;
+
+      // Metadados (tamanho, mime, expiração) na tabela dedicada — melhor
+      // esforço: se falhar, o trigger `anexos_registrar_novos` (banco) ainda
+      // registra a linha (sem size_bytes) quando o UPDATE abaixo gravar o
+      // jsonb, e o cron de limpeza cobre o resto.
+      const { error: metadadosError } = await supabase.from("anexos").insert({
+        checklist_item_id: itemId,
+        storage_path: resultadoUpload.path,
+        mime_type: resultadoUpload.mimeType,
+        nome_original: arquivo.name,
+        size_bytes: resultadoUpload.sizeBytes,
+      });
+      if (metadadosError) {
+        console.error("Falha ao registrar metadados do anexo:", metadadosError.message);
+      }
 
       const { data } = supabase.storage.from(BUCKET_ANEXOS).getPublicUrl(caminho);
       const novo: Anexo = {

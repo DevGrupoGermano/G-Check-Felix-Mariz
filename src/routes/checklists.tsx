@@ -56,8 +56,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn, dataDoIso, FUSO_LOJA, isoDoDia } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-store";
-import type { ChecklistExecucaoRow } from "@/lib/supabase";
+import type { Anexo, ChecklistExecucaoRow } from "@/lib/supabase";
 import { fetchExecucoes, HISTORICO_QUERY_KEY } from "@/lib/historico";
+import { caminhoDoAnexo } from "@/lib/anexos-path";
+import { anexosStorageService } from "@/lib/storage-service";
 import { fetchNomesAdmin, NOMES_ADMIN_QUERY_KEY } from "@/lib/profiles";
 import { DIAS_DESATIVADOS_QUERY_KEY, reativarDia, useHojeDesativado } from "@/lib/dias-desativados";
 import {
@@ -919,6 +921,37 @@ function JustificativaCampo({
   );
 }
 
+/** TTL das URLs assinadas na StorageService — cache um pouco mais curto pra
+ *  sempre reassinar bem antes de expirar. */
+const ANEXOS_SIGNED_URL_STALE_MS = 50 * 60 * 1000;
+
+/** Resolve, em lote, uma URL assinada (temporária) para cada anexo de uma
+ *  lista — o bucket é privado, então `a.url` (a URL pública salva no jsonb)
+ *  não resolve mais sozinha; ela só serve pra derivar o `storage_path`. */
+function useAnexosSignedUrls(anexos: Anexo[]) {
+  const caminhos = React.useMemo(
+    () =>
+      Array.from(new Set(anexos.map((a) => caminhoDoAnexo(a.url)).filter((c): c is string => !!c))),
+    [anexos],
+  );
+  return useQuery({
+    queryKey: ["anexos-signed-urls", ...caminhos],
+    queryFn: async () => {
+      const porCaminho = await anexosStorageService.getSignedUrls(caminhos);
+      // Reindexa por `url` pública (chave usada pelo resto do componente).
+      const porUrl: Record<string, string> = {};
+      for (const a of anexos) {
+        const caminho = caminhoDoAnexo(a.url);
+        if (caminho && porCaminho[caminho]) porUrl[a.url] = porCaminho[caminho];
+      }
+      return porUrl;
+    },
+    enabled: caminhos.length > 0,
+    staleTime: ANEXOS_SIGNED_URL_STALE_MS,
+    gcTime: ANEXOS_SIGNED_URL_STALE_MS + 10 * 60 * 1000,
+  });
+}
+
 /**
  * Anexos de comprovação de um item (foto, vídeo ou documento — vários por item).
  * Quando `podeEditar`, mostra o botão de adicionar e o "x" de cada anexo; caso
@@ -941,6 +974,7 @@ function AnexosItem({
   const [fotoAmpliada, setFotoAmpliada] = React.useState<{ url: string; nome: string } | null>(
     null,
   );
+  const { data: urlsAssinadas } = useAnexosSignedUrls(item.anexos);
 
   async function enviarArquivo(arquivo: File) {
     setEnviando(true);
@@ -973,25 +1007,37 @@ function AnexosItem({
           {item.anexos.map((a) => {
             const ehImagem = a.tipo.startsWith("image/");
             const ehVideo = a.tipo.startsWith("video/");
+            const urlAssinada = urlsAssinadas?.[a.url];
             return (
               <span key={a.url} className="group relative inline-flex shrink-0">
                 {ehImagem ? (
                   <button
                     type="button"
-                    onClick={() => setFotoAmpliada({ url: a.url, nome: a.nome })}
+                    disabled={!urlAssinada}
+                    onClick={() => urlAssinada && setFotoAmpliada({ url: urlAssinada, nome: a.nome })}
                   >
-                    <img
-                      src={a.url}
-                      alt={a.nome}
-                      className="size-14 rounded-lg border border-border object-cover"
-                    />
+                    {urlAssinada ? (
+                      <img
+                        src={urlAssinada}
+                        alt={a.nome}
+                        className="size-14 rounded-lg border border-border object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-14 items-center justify-center rounded-lg border border-border bg-muted">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                      </span>
+                    )}
                   </button>
                 ) : (
                   <a
-                    href={a.url}
+                    href={urlAssinada}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex max-w-[10rem] items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    aria-disabled={!urlAssinada}
+                    onClick={(e) => {
+                      if (!urlAssinada) e.preventDefault();
+                    }}
+                    className="inline-flex max-w-[10rem] items-center gap-1.5 rounded-lg border border-border bg-muted px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground aria-disabled:opacity-50"
                   >
                     {ehVideo ? (
                       <Play className="size-3.5 shrink-0" />

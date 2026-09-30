@@ -24,11 +24,14 @@ async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const resultado = await limparAnexos({ supabaseUrl, serviceRoleKey, dryRun });
 
-  console.log(`Objetos no bucket: ${resultado.totalObjetos}`);
-  console.log(`Referenciados (mantidos): ${resultado.objetosValidos}`);
   console.log(
-    `${dryRun ? "Seriam removidos" : "Removidos"}: ${resultado.objetosRemovidos} ` +
-      `(${(resultado.bytesLiberados / 1024 / 1024).toFixed(1)} MB)`,
+    `Expirados (anexos.expires_at): ${resultado.expirados} — ` +
+      `${dryRun ? "seriam removidos" : "removidos"}: ${resultado.expiradosRemovidos} ` +
+      `(${(resultado.bytesLiberadosExpirados / 1024 / 1024).toFixed(1)} MB)`,
+  );
+  console.log(
+    `Órfãos no bucket sem metadados (fora do grace period): ${resultado.orfaosEncontrados} — ` +
+      `${dryRun ? "seriam removidos" : "removidos"}: ${resultado.orfaosRemovidos}`,
   );
 
   if (resultado.erros.length > 0) {

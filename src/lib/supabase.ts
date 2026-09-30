@@ -16,12 +16,30 @@ export const BUCKET_ANEXOS = "checklist-fotos";
 
 /** Um anexo de comprovação (foto, vídeo ou documento) de um item de checklist. */
 export interface Anexo {
-  /** URL pública no Storage. */
+  /** URL pública "histórica" salva no jsonb — usada só para derivar o
+   *  `storage_path` (ver `caminhoDoAnexo` em `@/lib/anexos-path`) e assinar uma
+   *  URL temporária na hora de exibir; o bucket é privado, então essa URL não
+   *  resolve mais sozinha. */
   url: string;
   /** MIME do arquivo (ex.: "image/jpeg", "video/mp4", "application/pdf"). */
   tipo: string;
   /** Nome original do arquivo, para exibição. */
   nome: string;
+}
+
+/** Linha da tabela `anexos` — metadados do arquivo (ver migration
+ *  20260930120000_anexos_metadata.sql). Fonte de verdade para tamanho, mime e
+ *  expiração; o array `Anexo[]` acima continua sendo o que o item referencia
+ *  diretamente. */
+export interface AnexoRow {
+  id: string;
+  checklist_item_id: string | null;
+  storage_path: string;
+  mime_type: string;
+  nome_original: string;
+  size_bytes: number | null;
+  created_at: string;
+  expires_at: string;
 }
 
 export interface ChecklistRow {
