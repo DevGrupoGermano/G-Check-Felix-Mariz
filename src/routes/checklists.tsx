@@ -19,7 +19,6 @@ import {
   Trash2,
   User,
   Users,
-  Video,
   X,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -968,7 +967,8 @@ function useAnexosSignedUrls(anexos: Anexo[]) {
 }
 
 /**
- * Anexos de comprovação de um item (foto, vídeo ou documento — vários por item).
+ * Anexos de comprovação de um item (fotos — vários por item). O envio de vídeo
+ * foi removido para poupar o storage; vídeos antigos ainda aparecem até a limpeza.
  * Quando `podeEditar`, mostra o botão de adicionar e o "x" de cada anexo; caso
  * contrário fica só com as miniaturas/chips clicáveis (dia fechado / leitura).
  * A trava de "não conclui sem os anexos mínimos" mora no store (toggleItem) e no
@@ -984,7 +984,7 @@ function AnexosItem({
   podeEditar: boolean;
 }) {
   const { anexarArquivo, removerAnexo } = useGCheck();
-  const [modoCaptura, setModoCaptura] = React.useState<"foto" | "video" | null>(null);
+  const [capturandoFoto, setCapturandoFoto] = React.useState(false);
   const [enviando, setEnviando] = React.useState(false);
   const [fotoAmpliada, setFotoAmpliada] = React.useState<{ url: string; nome: string } | null>(
     null,
@@ -1090,7 +1090,7 @@ function AnexosItem({
                 variant="outline"
                 className="h-7 gap-1.5 px-2 text-xs"
                 disabled={enviando}
-                onClick={() => setModoCaptura("foto")}
+                onClick={() => setCapturandoFoto(true)}
               >
                 {enviando ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -1098,21 +1098,6 @@ function AnexosItem({
                   <Camera className="size-3.5" />
                 )}
                 Foto
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1.5 px-2 text-xs"
-                disabled={enviando}
-                onClick={() => setModoCaptura("video")}
-              >
-                {enviando ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Video className="size-3.5" />
-                )}
-                Vídeo
               </Button>
               {enviando && (
                 <span
@@ -1124,13 +1109,12 @@ function AnexosItem({
                   Enviando, aguarde…
                 </span>
               )}
-              {modoCaptura && (
+              {capturandoFoto && (
                 <CapturaCameraDialog
                   open
-                  modo={modoCaptura}
-                  onOpenChange={(v) => !v && setModoCaptura(null)}
+                  onOpenChange={(v) => !v && setCapturandoFoto(false)}
                   onCapturar={(arquivo) => {
-                    setModoCaptura(null);
+                    setCapturandoFoto(false);
                     enviarArquivo(arquivo);
                   }}
                 />

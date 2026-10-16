@@ -6,6 +6,8 @@ import { limparAnexos } from "../src/lib/anexos-cleanup";
  * Uso local (lê `.env` automaticamente via Bun):
  *   bun run cleanup:anexos            # apaga de verdade
  *   bun run cleanup:anexos:dry        # só mostra o que seria apagado
+ *   bun run cleanup:videos            # idem + todos os vídeos, mesmo não expirados
+ *   bun run cleanup:videos:dry
  *
  * No GitHub Actions (.github/workflows/cleanup-anexos.yml) as mesmas
  * variáveis vêm de repository secrets em vez do `.env`.
@@ -22,10 +24,11 @@ async function main() {
   }
 
   const dryRun = process.argv.includes("--dry-run");
-  const resultado = await limparAnexos({ supabaseUrl, serviceRoleKey, dryRun });
+  const apagarVideos = process.argv.includes("--videos");
+  const resultado = await limparAnexos({ supabaseUrl, serviceRoleKey, dryRun, apagarVideos });
 
   console.log(
-    `Expirados (anexos.expires_at): ${resultado.expirados} — ` +
+    `Expirados (anexos.expires_at)${apagarVideos ? " + vídeos" : ""}: ${resultado.expirados} — ` +
       `${dryRun ? "seriam removidos" : "removidos"}: ${resultado.expiradosRemovidos} ` +
       `(${(resultado.bytesLiberadosExpirados / 1024 / 1024).toFixed(1)} MB)`,
   );

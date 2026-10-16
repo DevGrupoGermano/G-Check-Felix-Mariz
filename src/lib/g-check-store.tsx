@@ -357,9 +357,7 @@ async function removerPastaDaChecklist(checklistId: string): Promise<void> {
   await removerMetadadosDosAnexos(caminhos);
 }
 
-// Vídeo gravado na hora (câmera) já sai limitado a ~20MB (ver
-// captura-camera.tsx: DURACAO_MAX_VIDEO_S + VIDEO_BITS_POR_SEGUNDO) — sem
-// teto aqui o upload de uma rede móvel ruim fica "pendurado" sem erro nem
+// Sem teto aqui o upload de uma rede móvel ruim fica "pendurado" sem erro nem
 // sucesso, e um anexo fora do padrão (ex.: PDF grande) não deveria passar
 // disso mesmo assim.
 const TAMANHO_MAX_ANEXO_MB = 20;
@@ -822,10 +820,12 @@ export function GCheckProvider({ children }: { children: React.ReactNode }) {
       if (item?.maxAnexos != null && item.anexos.length >= item.maxAnexos) {
         throw new Error(`Este item aceita no máximo ${item.maxAnexos} arquivo(s).`);
       }
+      // Envio de vídeo desativado — consumia o storage do Supabase rápido demais.
+      if (arquivo.type.startsWith("video/")) {
+        throw new Error("Envio de vídeo não é permitido — anexe uma foto.");
+      }
       if (arquivo.size > TAMANHO_MAX_ANEXO_MB * 1024 * 1024) {
-        throw new Error(
-          `Arquivo muito grande (máx. ${TAMANHO_MAX_ANEXO_MB}MB) — grave um vídeo mais curto ou em qualidade menor.`,
-        );
+        throw new Error(`Arquivo muito grande (máx. ${TAMANHO_MAX_ANEXO_MB}MB).`);
       }
       const ext =
         arquivo.name

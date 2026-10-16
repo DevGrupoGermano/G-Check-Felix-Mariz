@@ -39,6 +39,9 @@ export async function limparAnexos(opts: {
   serviceRoleKey: string;
   /** Só lista o que seria removido, sem apagar de verdade. */
   dryRun?: boolean;
+  /** Também remove todos os anexos de vídeo, mesmo antes de expirar — o envio
+   *  de vídeo foi desativado e eles ocupavam boa parte do storage. */
+  apagarVideos?: boolean;
 }): Promise<ResultadoLimpezaAnexos> {
   const supabase = createClient(opts.supabaseUrl, opts.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -47,12 +50,13 @@ export async function limparAnexos(opts: {
   const erros: string[] = [];
 
   // ---------------------------------------------------------------------
-  // 1) Expirados — dirigido por anexos.expires_at.
+  // 1) Expirados — dirigido por anexos.expires_at (+ todos os vídeos, se pedido).
   // ---------------------------------------------------------------------
-  const { data: expiradosRows, error: expiradosError } = await supabase
-    .from("anexos")
-    .select("id, storage_path, size_bytes")
-    .lt("expires_at", new Date().toISOString());
+  const agora = new Date().toISOString();
+  const consultaAnexos = supabase.from("anexos").select("id, storage_path, size_bytes");
+  const { data: expiradosRows, error: expiradosError } = await (opts.apagarVideos
+    ? consultaAnexos.or(`expires_at.lt.${agora},mime_type.like.video/*`)
+    : consultaAnexos.lt("expires_at", agora));
   if (expiradosError) throw new Error(`Falha ao consultar anexos expirados: ${expiradosError.message}`);
 
   const expirados = expiradosRows ?? [];
